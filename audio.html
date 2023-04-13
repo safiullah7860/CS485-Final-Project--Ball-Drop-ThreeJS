@@ -59,6 +59,20 @@
       ball.position.set(0, 6, 0);
       scene.add(ball);
       //  /let ballVelocity = new THREE.Vector3(-3, 0, 0); // Set initial velocity for the ball
+      // Set up the ground
+      const groundTexture = new THREE.TextureLoader().load(
+        "https://threejs.org/examples/textures/hardwood2_diffuse.jpg"
+      );
+      groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+      groundTexture.repeat.set(20, 20);
+      const groundMaterial = new THREE.MeshPhongMaterial({
+        map: groundTexture,
+      });
+      const groundGeometry = new THREE.PlaneGeometry(50, 50);
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -1;
+      scene.add(ground);
 
       // Set up the staircase
       const stepWidth = 1;
@@ -76,9 +90,10 @@
           "https://threejs.org/examples/textures/brick_diffuse.jpg"
         );
         const stepMaterial = new THREE.MeshPhongMaterial({
-          map: stepTexture,
+          color: 0xff0000, // red color
           shininess: 50,
         });
+
         const step = new THREE.Mesh(stepGeometry, stepMaterial);
         step.position.x = (i - numSteps / 2) * stepWidth - 2; // Move the staircase to the left side of the scene
         step.position.y = -0.7 + (i * stepHeight + stepHeight / 2); // add offset of half stepHeight
