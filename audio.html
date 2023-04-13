@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Three.js Ball Falling Down a Staircase</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdn.rawgit.com/mrdoob/three.js/r129/build/three.min.js"></script>
+    <script src="https://cdn.rawgit.com/mrdoob/three.js/r129/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+      // Set up the scene
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xbfd1e5);
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(-5, 10, 10);
+      const renderer = new THREE.WebGLRenderer();
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Add lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+      const pointLight = new THREE.PointLight(0xffffff, 0.5);
+      pointLight.position.set(10, 10, 10);
+      camera.add(pointLight);
+      scene.add(camera);
+
+      // Set up the ball
+      // Set up the ball
+      const ballRadius = 0.5;
+      const ballGeometry = new THREE.SphereGeometry(ballRadius, 32, 32);
+      const ballTexture = new THREE.TextureLoader().load(
+        "https://threejs.org/examples/textures/uv_grid_opengl.jpg"
+      );
+      const ballMaterial = new THREE.MeshPhongMaterial({
+        map: ballTexture,
+        shininess: 100,
+      });
+      const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+      ball.position.set(0, 4, 0);
+      scene.add(ball);
+      //  /let ballVelocity = new THREE.Vector3(-3, 0, 0); // Set initial velocity for the ball
+
+      // Set up the staircase
+      const stepWidth = 1;
+      const stepHeight = 0.2;
+      const stepDepth = 1;
+      const numSteps = 20;
+      const staircase = new THREE.Group();
+      for (let i = 0; i < numSteps; i++) {
+        const stepGeometry = new THREE.BoxGeometry(
+          stepWidth,
+          stepHeight,
+          stepDepth
+        );
+        const stepTexture = new THREE.TextureLoader().load(
+          "https://threejs.org/examples/textures/brick_diffuse.jpg"
+        );
+        const stepMaterial = new THREE.MeshPhongMaterial({
+          map: stepTexture,
+          shininess: 50,
+        });
+        const step = new THREE.Mesh(stepGeometry, stepMaterial);
+        step.position.x = (i - numSteps / 2) * stepWidth - 2; // Move the staircase to the left side of the scene
+        step.position.y = -0.7 + (i * stepHeight + stepHeight / 2); // add offset of half stepHeight
+        staircase.add(step);
+      }
+      scene.add(staircase);
+
+      // Set up the animation
+      // Set up the animation
+      let ballVelocity = new THREE.Vector3(0, 0, 0);
+      const gravity = new THREE.Vector3(0, -0.2, 0);
+      const timeStep = 0.01;
+      let elapsedTime = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+        elapsedTime += timeStep;
+        const oldPosition = ball.position.clone();
+        const newPosition = ball.position
+          .clone()
+          .add(ballVelocity.clone().multiplyScalar(timeStep));
+        const acceleration = gravity.clone();
+        if (newPosition.y < ballRadius) {
+          // The ball has stopped
+          acceleration.y = 0;
+          newPosition.y = ballRadius;
+          if (ballVelocity.length() > 1) {
+            ballVelocity.multiplyScalar(0.9); //doesn't help
+          } else {
+            ballVelocity.set(0, 0, 0);
+          }
+        } else {
+          // The ball is in the air
+          const step = Math.floor(newPosition.y / stepHeight);
+          if (step < numSteps) {
+            const stepX = (step - numSteps / 2) * stepWidth - 2;
+            const diff = stepX - newPosition.x;
+            const slope =
+              ((staircase.children[step].position.y - ball.position.y) /
+                stepWidth) *
+              10;
+            const slopeVelocity = new THREE.Vector3(0, slope, 0);
+            acceleration.add(slopeVelocity);
+            acceleration.x = diff * 10;
+          }
+        }
+
+        ballVelocity.add(acceleration.multiplyScalar(timeStep));
+        ball.rotation.x += (ballVelocity.z * timeStep) / ballRadius;
+        const step = Math.floor(ball.position.y / stepHeight);
+        const stepX = (step - numSteps / 2) * stepWidth - 2;
+        ball.position.copy(newPosition);
+        ball.position.x = stepX;
+        ball.rotation.z =
+          Math.atan2(ballVelocity.x, ballVelocity.z) - Math.PI / 2;
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    </script>
+  </body>
+</html>
