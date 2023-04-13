@@ -56,13 +56,13 @@
         shininess: 100,
       });
       const ball = new THREE.Mesh(ballGeometry, ballMaterial);
-      ball.position.set(0, 4, 0);
+      ball.position.set(0, 6, 0);
       scene.add(ball);
       //  /let ballVelocity = new THREE.Vector3(-3, 0, 0); // Set initial velocity for the ball
 
       // Set up the staircase
       const stepWidth = 1;
-      const stepHeight = 0.2;
+      const stepHeight = 0.3;
       const stepDepth = 1;
       const numSteps = 20;
       const staircase = new THREE.Group();
@@ -90,7 +90,7 @@
       // Set up the animation
       let ballVelocity = new THREE.Vector3(0, 0, 0);
       const gravity = new THREE.Vector3(0, -0.2, 0);
-      const timeStep = 0.01;
+      const timeStep = 0.008;
       let elapsedTime = 0;
       function animate() {
         requestAnimationFrame(animate);
