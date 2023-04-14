@@ -79,18 +79,18 @@
           stepDepth
         );
         const stepTexture = new THREE.TextureLoader().load(
-          "https://threejs.org/examples/textures/hardwood2_diffuse.jpg"
+          "https://threejs.org/examples/textures/brick_diffuse.jpg"
         );
-        stepTexture.wrapS = stepTexture.wrapT = THREE.RepeatWrapping;
-        stepTexture.repeat.set(stepWidth, stepDepth);
         const stepMaterial = new THREE.MeshPhongMaterial({
-          map: stepTexture,
+          color: 0x808080, // red color
+          shininess: 50,
         });
+
         const step = new THREE.Mesh(stepGeometry, stepMaterial);
-        step.position.y = i * stepHeight;
+        step.position.x = (i - numSteps / 2) * stepWidth - 2; // Move the staircase to the left side of the scene
+        step.position.y = -0.7 + (i * stepHeight + stepHeight / 2); // add offset of half stepHeight
         staircase.add(step);
       }
-      staircase.position.set(-2.5, 0, 2.5);
       scene.add(staircase);
 
       // Set up the physics
