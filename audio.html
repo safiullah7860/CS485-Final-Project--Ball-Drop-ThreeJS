@@ -45,9 +45,9 @@
       scene.add(camera);
 
       // Set up the cloth
-      const clothWidth = 5;
-      const clothHeight = 5;
-      const clothSegments = 10;
+      const clothWidth = 2;
+      const clothHeight = 2;
+      const clothSegments = 5;
       const clothGeometry = new THREE.PlaneGeometry(
         clothWidth,
         clothHeight,
@@ -130,7 +130,7 @@
       let lastTime = performance.now();
       function animate() {
         const time = performance.now();
-        const deltaTime = (time - lastTime) / 1000;
+        const deltaTime = (time - lastTime) / 500;
 
         // Apply forces to cloth particles
         const positions = clothGeometry.attributes.position;
