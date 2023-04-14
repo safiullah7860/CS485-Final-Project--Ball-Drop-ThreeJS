@@ -109,7 +109,7 @@
       // Set up the physics
       const gravity = new THREE.Vector3(0, -9.81, 0);
       const mass = 1;
-      const damping = 0.05;
+      const damping = 0.08;
       const clothParticles = clothGeometry.attributes.position.count;
 
       const clothConstraints = [];
@@ -173,7 +173,19 @@
         clothGeometry.attributes.position.needsUpdate = true;
 
         lastTime = time;
-
+        //added wind so that cloth can crumble up a bit
+        const windForce = new THREE.Vector3(-2, -3, 0).multiplyScalar(3);
+        for (let i = 5; i < clothParticles; i++) {
+          const velocity = clothVelocities[i];
+          const force = windForce.clone().sub(velocity).multiplyScalar(damping);
+          velocity.add(force);
+          positions.setXYZ(
+            i,
+            positions.getX(i) + velocity.x * deltaTime,
+            positions.getY(i) + velocity.y * deltaTime,
+            positions.getZ(i) + velocity.z * deltaTime
+          );
+        }
         // Render the scene
         requestAnimationFrame(animate);
         renderer.render(scene, camera);
