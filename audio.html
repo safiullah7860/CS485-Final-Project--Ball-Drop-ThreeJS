@@ -66,6 +66,19 @@
       scene.add(cloth);
 
       // Set up the ground
+      const groundTexture = new THREE.TextureLoader().load(
+        "https://threejs.org/examples/textures/hardwood2_diffuse.jpg"
+      );
+      groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+      groundTexture.repeat.set(20, 20);
+      const groundMaterial = new THREE.MeshPhongMaterial({
+        map: groundTexture,
+      });
+      const groundGeometry = new THREE.PlaneGeometry(50, 50);
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -1;
+      scene.add(ground);
       // Set up the staircase
       const stepWidth = 1;
       const stepHeight = 0.3;
