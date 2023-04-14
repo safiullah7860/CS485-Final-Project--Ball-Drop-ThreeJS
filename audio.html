@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Three.js Ball Falling Down a Staircase</title>
+    <title>Three.js Cloth Rolling Down a Staircase</title>
     <style>
       body {
         margin: 0;
@@ -44,36 +44,28 @@
       camera.add(pointLight);
       scene.add(camera);
 
-      // Set up the ball
-      // Set up the ball
-      const ballRadius = 0.5;
-      const ballGeometry = new THREE.SphereGeometry(ballRadius, 32, 32);
-      const ballTexture = new THREE.TextureLoader().load(
-        "https://threejs.org/examples/textures/uv_grid_opengl.jpg"
+      // Set up the cloth
+      const clothWidth = 5;
+      const clothHeight = 5;
+      const clothSegments = 10;
+      const clothGeometry = new THREE.PlaneGeometry(
+        clothWidth,
+        clothHeight,
+        clothSegments,
+        clothSegments
       );
-      const ballMaterial = new THREE.MeshPhongMaterial({
-        map: ballTexture,
-        shininess: 100,
-      });
-      const ball = new THREE.Mesh(ballGeometry, ballMaterial);
-      ball.position.set(0, 6, 0);
-      scene.add(ball);
-      //  /let ballVelocity = new THREE.Vector3(-3, 0, 0); // Set initial velocity for the ball
-      // Set up the ground
-      const groundTexture = new THREE.TextureLoader().load(
-        "https://threejs.org/examples/textures/hardwood2_diffuse.jpg"
+      const clothTexture = new THREE.TextureLoader().load(
+        "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/crate.gif"
       );
-      groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
-      groundTexture.repeat.set(20, 20);
-      const groundMaterial = new THREE.MeshPhongMaterial({
-        map: groundTexture,
+      const clothMaterial = new THREE.MeshPhongMaterial({
+        map: clothTexture,
+        side: THREE.DoubleSide,
       });
-      const groundGeometry = new THREE.PlaneGeometry(50, 50);
-      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.y = -1;
-      scene.add(ground);
+      const cloth = new THREE.Mesh(clothGeometry, clothMaterial);
+      cloth.position.set(0, clothHeight / 2 - 1, 0);
+      scene.add(cloth);
 
+      // Set up the ground
       // Set up the staircase
       const stepWidth = 1;
       const stepHeight = 0.3;
@@ -87,70 +79,92 @@
           stepDepth
         );
         const stepTexture = new THREE.TextureLoader().load(
-          "https://threejs.org/examples/textures/brick_diffuse.jpg"
+          "https://threejs.org/examples/textures/hardwood2_diffuse.jpg"
         );
+        stepTexture.wrapS = stepTexture.wrapT = THREE.RepeatWrapping;
+        stepTexture.repeat.set(stepWidth, stepDepth);
         const stepMaterial = new THREE.MeshPhongMaterial({
-          color: 0x808080, // red color
-          shininess: 50,
+          map: stepTexture,
         });
-
         const step = new THREE.Mesh(stepGeometry, stepMaterial);
-        step.position.x = (i - numSteps / 2) * stepWidth - 2; // Move the staircase to the left side of the scene
-        step.position.y = -0.7 + (i * stepHeight + stepHeight / 2); // add offset of half stepHeight
+        step.position.y = i * stepHeight;
         staircase.add(step);
       }
+      staircase.position.set(-2.5, 0, 2.5);
       scene.add(staircase);
 
-      // Set up the animation
-      // Set up the animation
-      let ballVelocity = new THREE.Vector3(0, 0, 0);
-      const gravity = new THREE.Vector3(0, -0.2, 0);
-      const timeStep = 0.008;
-      let elapsedTime = 0;
-      function animate() {
-        requestAnimationFrame(animate);
-        elapsedTime += timeStep;
-        const oldPosition = ball.position.clone();
-        const newPosition = ball.position
-          .clone()
-          .add(ballVelocity.clone().multiplyScalar(timeStep));
-        const acceleration = gravity.clone();
-        if (newPosition.y < ballRadius) {
-          // The ball has stopped
-          acceleration.y = 0;
-          newPosition.y = ballRadius;
-          if (ballVelocity.length() > 1) {
-            ballVelocity.multiplyScalar(0.9); //doesn't help
-          } else {
-            ballVelocity.set(0, 0, 0);
-          }
-        } else {
-          // The ball is in the air
-          const step = Math.floor(newPosition.y / stepHeight);
-          if (step < numSteps) {
-            const stepX = (step - numSteps / 2) * stepWidth - 2;
-            const diff = stepX - newPosition.x;
-            const slope =
-              ((staircase.children[step].position.y - ball.position.y) /
-                stepWidth) *
-              10;
-            const slopeVelocity = new THREE.Vector3(0, slope, 0);
-            acceleration.add(slopeVelocity);
-            acceleration.x = diff * 10;
-          }
-        }
+      // Set up the physics
+      const gravity = new THREE.Vector3(0, -9.81, 0);
+      const mass = 1;
+      const damping = 0.05;
+      const clothParticles = clothGeometry.attributes.position.count;
 
-        ballVelocity.add(acceleration.multiplyScalar(timeStep));
-        ball.rotation.x += (ballVelocity.z * timeStep) / ballRadius;
-        const step = Math.floor(ball.position.y / stepHeight);
-        const stepX = (step - numSteps / 2) * stepWidth - 2;
-        ball.position.copy(newPosition);
-        ball.position.x = stepX;
-        ball.rotation.z =
-          Math.atan2(ballVelocity.x, ballVelocity.z) - Math.PI / 2;
-        renderer.render(scene, camera);
+      const clothConstraints = [];
+      for (let i = 0; i < clothParticles; i++) {
+        const x = i % (clothSegments + 1);
+        const y = Math.floor(i / (clothSegments + 1));
+        if (x < clothSegments && y < clothSegments) {
+          clothConstraints.push([i, i + 1]);
+          clothConstraints.push([i, i + clothSegments + 1]);
+        }
+      }
+      const clothVelocities = [];
+      for (let i = 0; i < clothParticles; i++) {
+        clothVelocities.push(new THREE.Vector3(0, 0, 0));
       }
 
+      // Animate the scene
+      let lastTime = performance.now();
+      function animate() {
+        const time = performance.now();
+        const deltaTime = (time - lastTime) / 1000;
+
+        // Apply forces to cloth particles
+        const positions = clothGeometry.attributes.position;
+        for (let i = 0; i < clothParticles; i++) {
+          const vertex = new THREE.Vector3().fromBufferAttribute(positions, i);
+          const velocity = clothVelocities[i];
+
+          // Gravity
+          const forceGravity = gravity.clone().multiplyScalar(mass);
+
+          // Damping
+          const forceDamping = velocity.clone().multiplyScalar(-damping);
+
+          const force = forceGravity.add(forceDamping);
+          velocity.add(force.multiplyScalar(deltaTime));
+          vertex.add(velocity.multiplyScalar(deltaTime));
+
+          positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+        }
+
+        // Satisfy constraints
+        for (let i = 0; i < clothConstraints.length; i++) {
+          const constraint = clothConstraints[i];
+          const p1 = new THREE.Vector3().fromBufferAttribute(
+            positions,
+            constraint[0]
+          );
+          const p2 = new THREE.Vector3().fromBufferAttribute(
+            positions,
+            constraint[1]
+          );
+          const distance = p1.distanceTo(p2);
+          const direction = p2.clone().sub(p1).normalize();
+          const correction = direction.multiplyScalar(0.5 * (distance - 1));
+          p1.add(correction);
+          p2.sub(correction);
+          positions.setXYZ(constraint[0], p1.x, p1.y, p1.z);
+          positions.setXYZ(constraint[1], p2.x, p2.y, p2.z);
+        }
+        clothGeometry.attributes.position.needsUpdate = true;
+
+        lastTime = time;
+
+        // Render the scene
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
       animate();
     </script>
   </body>
